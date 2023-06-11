@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Trò chơi bắn súng</title>
+</head>
+<body>
+    <canvas id="gameCanvas" width="1350" height="600"></canvas>
+    <script>
+        var canvas = document.getElementById("gameCanvas");
+        var ctx = canvas.getContext("2d");
+
+        // Tạo một đối tượng hình ảnh mới cho hình nền
+        var backgroundImage = new Image();
+        backgroundImage.src = "IMG_5096.jpg";
+
+        // Tạo một đối tượng hình ảnh mới cho nhân vật chính
+        var playerImage = new Image();
+        playerImage.src = "kefla.png";
+
+        // Tạo một đối tượng hình ảnh mới cho kẻ thù
+        var enemyImage = new Image();
+        enemyImage.src = "vegeta.png";
+
+        var bulletImage = new Image();
+        bulletImage.src = "bullet.png";
+       
+
+        // Nhân vật chính
+        var player = {
+            x: 50,
+            y: 400,
+            width: 200,
+            height: 200,
+            speed: 5
+        };
+
+        // Kẻ thù
+        var enemy = {
+            x: 700,
+            y: 500,
+            width: 50,
+            height: 50,
+            
+        };
+
+        // Mảng lưu trữ các viên đạn
+        var bullets = [];
+
+        // Thêm sự kiện bàn phím
+        document.addEventListener("keydown", function(event) {
+            if (event.key === "a") {
+                // Di chuyển nhân vật chính sang trái
+                player.x -= player.speed;
+            } else if (event.key === "d") {
+                // Di chuyển nhân vật chính sang phải
+                player.x += player.speed;
+            } else if (event.key === "w") {
+                // Di chuyển nhân vật chính lên trên
+                player.y -= player.speed;
+            } else if (event.key === "s") {
+                // Di chuyển nhân vật chính xuống dưới
+                player.y += player.speed;
+            } else if (event.key === " ") {
+                // Tạo một viên đạn mới
+                var bullet = {
+                    x: player.x + player.width,
+                    y: player.y + player.height / 2,
+                    width: 150,
+                    height: 70,
+                    color: "red"
+                    
+
+                };
+                // Thêm viên đạn vào mảng
+                bullets.push(bullet);
+            } else if (event.key === "q ") {
+                // Kích hoạt kỹ năng tăng tốc độ di chuyển
+                player.speed = 100;
+            }
+        });
+
+        document.addEventListener("keyup", function(event) {
+            if (event.key === "e") {
+                // Hủy kích hoạt kỹ năng tăng tốc độ di chuyển
+                player.speed = 30;
+            }
+        });
+
+        // Hàm đặt lại trạng thái trò chơi
+        function resetGame() {
+            // Đặt lại vị trí nhân vật chính
+            player.x = 50;
+            player.y = 400;
+            // Đặt lại vị trí kẻ thù
+            enemy.x = 700;
+            enemy.y = 500;
+            // Xóa các viên đạn
+            bullets = [];
+        }
+
+        // Vẽ hình nền
+        function drawBackground() {
+            ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+        }
+
+        // Vẽ nhân vật chính
+        function drawPlayer() {
+            ctx.drawImage(playerImage, player.x, player.y, player.width, player.height);
+        }
+
+        // Vẽ kẻ thù
+        function drawEnemy() {
+            ctx.drawImage(enemyImage,enemy.x, enemy.y, enemy.width, enemy.height);
+        }
+
+        // Vẽ các viên đạn
+        function drawBullets() {
+            for (var i = 0; i < bullets.length; i++) {
+                var bullet = bullets[i];
+                
+                ctx.drawImage(bulletImage,bullet.x, bullet.y, bullet.width, bullet.height);
+            }
+        }
+
+        // Cập nhật trạng thái trò chơi
+        function update() {
+            // Cập nhật vị trí kẻ thù
+            enemy.x -= 5;
+            if (enemy.x < -enemy.width) {
+                enemy.x = canvas.width;
+            }
+
+            // Cập nhật vị trí các viên đạn
+            for (var i = 0; i < bullets.length; i++) {
+                var bullet = bullets[i];
+                // Di chuyển viên đạn
+                bullet.x += 10;
+                // Xóa viên đạn nếu ra khỏi màn hình
+                if (bullet.x > canvas.width) {
+                    bullets.splice(i, 1);
+                    i--;
+                }
+            }
+        }
+
+        // Vẽ trò chơi
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBackground();
+            drawPlayer();
+            drawEnemy();
+            drawBullets();
+            drawScore();
+            
+        }
+
+        // Chạy trò chơi
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+            checkCollisions();
+            highScore();
+            resetGame();
+        }
+        gameLoop();
+
+        // Biến lưu trữ điểm số
+        var score = 0;
+        // Biến lưu trữ điểm số cao nhất
+        var highScore = localStorage.getItem("highScore") || 0;
+        // Hàm kiểm tra va chạm giữa hai đối tượng
+        function isColliding(obj1, obj2) {
+            return obj1.x < obj2.x + obj2.width &&
+                obj1.x + obj1.width > obj2.x &&
+                obj1.y < obj2.y + obj2.height &&
+                obj1.y + obj1.height > obj2.y;
+        }
+
+        // Kiểm tra va chạm giữa đạn và kẻ thù
+        function checkCollisions() {
+            // Kiểm tra va chạm giữa nhân vật chính và kẻ thù
+            if (isColliding(player, enemy)) {
+                // Hiển thị thông báo thua
+                alert("Mày thua rồi hahahaha");
+                // Đặt lại điểm số  
+                score = 0;
+                resetGame();
+            }
+
+            for (var i = 0; i < bullets.length; i++) {
+                var bullet = bullets[i];
+                if (isColliding(bullet, enemy)) {
+                    // Tăng điểm số
+                    score++;
+                    // Xóa viên đạn
+                    bullets.splice(i, 1);
+                    i--;
+                }
+                // Kiểm tra điểm số
+            if (score >= 50) {
+                // Hiển thị thông báo thắng
+                alert("Thắng rồi cu :)");
+                // Đặt lại điểm số
+                score = 0;
+                // Đặt lại trạng thái trò chơi
+                resetGame();
+            }
+            }
+        }
+
+        // Vẽ điểm số
+        function drawScore() {
+            
+            ctx.fillStyle = "red";
+            ctx.font = "26px iCiel Cadena";
+            ctx.fillText("Điểm: " + score, 10, 40);
+            ctx.fillText("Điểm cao nhất nè cu: " + highScore, 10, 70);
+        }
+        // Lưu điểm số cao nhất khi kết thúc trò chơi
+        window.addEventListener("unload", function() {
+            if (score > highScore) {
+                localStorage.setItem("highScore", score);
+            }
+        });
+
+
+        
+    </script>
+</body>
+</html>
